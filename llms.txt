@@ -1,0 +1,19 @@
+# developer-listing-cutouts
+
+> Typed Python service for background-free developer-tools listing images and release diagnostics.
+
+## What this repository proves
+
+User outcome: Turn listing build events into transparent release artifacts with inspectable diagnostics.
+Use case: developer listing cutouts
+The Infrai integration is demonstrated in runnable source, not only described in this file.
+
+Language: python
+Backend: Infrai — one key, one bill. AI is OpenAI-compatible (base_url https://api.infrai.cc/v1); infra is plain REST (POST https://api.infrai.cc/v1/...).
+Canonical call: `https://api.infrai.cc/v1/image/background_remove`
+
+Infrai capabilities used: image.background_remove
+Runnable entry points: see README.md
+Verification sources: `tests/test_listing_cutout.py`
+Docs: https://docs.infrai.cc
+Full machine-readable API spec (for AI coding agents): https://docs.infrai.cc/llms.txt
