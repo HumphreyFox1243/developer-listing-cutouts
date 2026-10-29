@@ -1,10 +1,10 @@
 # Remove backgrounds from developer listing images
 
-Publish builds must emit a PNG cutout, not WebP, or the released listing loses its alpha channel. We've been paged by that mismatch before. This service makes the call explicit, sends the image to Infrai through one key, and returns a typed diagnostic with the release op, chosen format, artifact, and provider metadata.
+Publish builds should produce a PNG cutout, even when a preview requested WebP, because the released product image needs a transparent alpha channel. This service makes that decision explicit, sends the image to Infrai through one API key, and returns a typed diagnostic that records the release operation, chosen format, artifact, and provider metadata.
 
 ## Run the decision first
 
-The focused test pins the input and expected output: a `publish` build requesting `webp` must select `png`. It also asserts the outgoing write carries a stable idempotency key, so retries don't double-ship.
+The focused test names the input and expected result: a `publish` build requesting `webp` must select `png`; it also checks that the outgoing write carries a stable idempotency key.
 
 ```bash
 python3 -m venv .venv
@@ -37,7 +37,7 @@ curl --request POST http://127.0.0.1:8000/build-events \
   --data "{\"build_id\":\"build-17\",\"listing_id\":\"listing-4\",\"operation\":\"publish\",\"filename\":\"terminal-card.jpg\",\"image_base64\":\"${IMAGE_BASE64}\",\"requested_format\":\"webp\"}"
 ```
 
-The successful response exposes the decision instead of hiding it in an image helper:
+The successful response exposes the decision instead of hiding it inside an image helper:
 
 ```json
 {
@@ -52,17 +52,17 @@ The successful response exposes the decision instead of hiding it in an image he
 }
 ```
 
-Artifact fields come straight from the API response. We pass them through without inventing another storage model to debug.
+The exact artifact fields come from the successful API response and are passed through without inventing another storage model.
 
 ## The boundary an agent should preserve
 
-`listing_cutout.py` is intentionally small. It performs an explicit `POST`, reads the `{ok, data, error, metadata}` envelope before classifying the HTTP response, retries rate-limited writes with `Retry-After` or exponential delay, and attaches an idempotency key derived from the build identity. Ordinary API rejections map to client-facing 4xx, and the success path stays observable through `BuildDiagnostic`.
+`listing_cutout.py` is intentionally small: it performs an explicit `POST`, reads the `{ok, data, error, metadata}` envelope before classifying the HTTP response, retries rate-limited writes with `Retry-After` or exponential delay, and attaches an idempotency key derived from the build identity. The service maps ordinary API rejections back to client-facing 4xx responses and keeps its successful path observable through `BuildDiagnostic`.
 
-The one real gotcha is format selection. Background removal and release policy are separate concerns, so the reusable module decides format before the network call. An LLM agent can inspect or test that decision without decoding a remote artifact. Skip this and you'll replay the WebP-in-prod incident.
+The one real gotcha is format selection. Background removal and release policy are separate concepts, so the reusable module decides the format before the network call; an LLM agent can inspect or test that decision without decoding a remote artifact.
 
 ## Going to production: Developer Listing Cutouts
 
-The code stays simple on purpose. Here's the setup before going live. The details below apply to Developer Listing Cutouts.
+The code stays simple on purpose — here's what to set up before going live: The details below apply to Developer Listing Cutouts.
 
 **Account & key**
 
